@@ -15,7 +15,6 @@ namespace Passenger_API.Models
         public string Name { get; set; }
         [Required]
         public char Gender { get; set; }
-
         [MaxLength(14)]
         public string? Phone { get; set; }
         [Required]
