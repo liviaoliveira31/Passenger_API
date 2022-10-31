@@ -33,7 +33,7 @@ namespace Passenger_API.Controllers
         [HttpGet("CPF/{cpf}", Name = "GetPassengerbyCPF")]
         public ActionResult<Passenger> Get(string cpf)
         {
-            cpf = FormatCPF(cpf);
+            cpf = CPFFormatting(cpf);
             var passenger = _passengerService.Get(cpf);
             if (passenger == null)
                 return NotFound("Passageiro não encontrado");
@@ -47,21 +47,23 @@ namespace Passenger_API.Controllers
         [HttpPost]
         public ActionResult<Passenger> Create(Passenger passenger)
         {
-            #region ADDRESS INSERTION
+            #region Inserção de endereço - OK
+
             var cep = passenger.Address.ZipCode;
             var address = _addressServices.GetAdress(cep).Result;
             if (address == null)
                 return NotFound("Endereço não encontrado");
             else
-                address.Number = passenger.Address.Number;
+            address.Number = passenger.Address.Number;
             address.Complement = passenger.Address.Complement;
             passenger.Address = address;
+
             #endregion
 
             if (CPFValidator(passenger.CPF))
             {
-                #region NONEXISTENT CPF VERIFICATION
-                passenger.CPF = FormatCPF(passenger.CPF);
+                #region Verificação de CPF valido - OK
+                passenger.CPF = CPFFormatting(passenger.CPF);
                 var pass = _passengerService.Get(passenger.CPF);
                 if (pass == null)
                 {
@@ -69,21 +71,27 @@ namespace Passenger_API.Controllers
                     {
                         passenger.DtRegister = System.DateTime.Now;
 
-                        #region RESTRICTED PASSENGER VERIFICATION
+                        #region verfificação de cpf restrito e inserção na collection restricted
 
                         if (passenger.Status == false)
                         {
-                            #region INSERTION (PASSENGER COLLECTION)                       
-                            passenger.Phone = FormatPhone(passenger.Phone);
+                            #region inserção na collection passenger - OK     
+                            if (passenger.Phone != "")
+                            {
+                                passenger.Phone = PhoneFormmating(passenger.Phone);
+                            }
                             _passengerService.Create(passenger);
                             return CreatedAtRoute("GetPassengerbyCPF", new { cpf = passenger.CPF.ToString() }, passenger);
                             #endregion
                         }
                         else
                         {
-                            #region INSERTION (PASSENGER COLLECTION AND RESTRICT COLLECTION)
+                            #region inserção na collection restricted e passenger - OK
                             Restricted restrictedpassenger = new Restricted();
-                            passenger.Phone = FormatPhone(passenger.Phone);
+                            if (passenger.Phone != "")
+                            {
+                                passenger.Phone = PhoneFormmating(passenger.Phone);
+                            }
                             restrictedpassenger.CPF = passenger.CPF;
                             restrictedpassenger.Name = passenger.Name;
                             restrictedpassenger.Gender = passenger.Gender;
@@ -92,14 +100,12 @@ namespace Passenger_API.Controllers
                             restrictedpassenger.DtRegister = passenger.DtRegister;
                             restrictedpassenger.Status = passenger.Status;
                             restrictedpassenger.Address = passenger.Address;
-
-
                             _restrictService.Create(restrictedpassenger);
                             _passengerService.Create(passenger);
                             return CreatedAtRoute("GetPassengerbyCPF", new { cpf = passenger.CPF.ToString() }, passenger);
                             #endregion
                         }
-                        #endregion RESTRICTED PASSENGER VERIFICATION
+                        #endregion 
                     }
                     else
                         return BadRequest("Genero não pode ser diferente de: F(Feminino), M(Masculino) ou O (Outro)");
@@ -107,7 +113,7 @@ namespace Passenger_API.Controllers
                 else
                     return BadRequest("CPF ja cadastrado!");
             }
-            #endregion NONEXISTENT CPF VERIFICATION 
+            #endregion 
 
             else
                 return BadRequest("CPF invalido!");
@@ -119,8 +125,8 @@ namespace Passenger_API.Controllers
         [HttpPut]
         public ActionResult<Passenger> Put(Passenger passengerIn, string cpf)
         {
-            passengerIn.CPF = FormatCPF(passengerIn.CPF);
-            cpf = FormatCPF(cpf);
+            passengerIn.CPF = CPFFormatting(passengerIn.CPF);
+            cpf = CPFFormatting(cpf);
             var passenger = _passengerService.Get(cpf);
             if (passenger == null)
             {
@@ -143,15 +149,18 @@ namespace Passenger_API.Controllers
 
             if (passengerIn.Gender == 'M' || passengerIn.Gender == 'F' || passengerIn.Gender == 'O')
             {
-                var cep = passenger.Address.ZipCode;
+                var cep = passengerIn.Address.ZipCode;
                 var address = _addressServices.GetAdress(cep).Result;
                 if (address == null)
                     return NotFound();
-                address.Number = passenger.Address.Number;
-                address.Complement = passenger.Address.Complement;
+                address.Number = passengerIn.Address.Number;
+                address.Complement = passengerIn.Address.Complement;
                 passengerIn.Address = address;
                 passengerIn.CPF = cpf;
-                passengerIn.Phone = FormatPhone(passengerIn.Phone);
+                if (passengerIn.Phone != "")
+                {
+                    passengerIn.Phone = PhoneFormmating(passengerIn.Phone);
+                }
 
                 _passengerService.Put(cpf, passengerIn);
                 return NoContent();
@@ -167,7 +176,7 @@ namespace Passenger_API.Controllers
         [HttpDelete]
         public ActionResult<Passenger> Remove(string cpf)
         {
-            cpf = FormatCPF(cpf);
+            cpf = CPFFormatting(cpf);
             var passenger = _passengerService.Get(cpf);
             if (passenger == null)
                 return NotFound("Passageiro não encontrado!");
@@ -231,18 +240,15 @@ namespace Passenger_API.Controllers
             return true;
         }
 
-        public static string FormatCPF(string cpf)
+        public static string CPFFormatting(string cpf)
         {
             return Convert.ToUInt64(cpf).ToString(@"000\.000\.000\-00");
         }
 
-        public static string FormatPhone(string phone)
+        public static string PhoneFormmating(string phone)
         {
             return Convert.ToUInt64(phone).ToString(@"(00)00000-0000");
         }
-
-
-
         #endregion
     }
 }

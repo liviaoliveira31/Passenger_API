@@ -15,13 +15,14 @@ namespace Passenger_API.Models
         public string Name { get; set; }
         [Required]
         public char Gender { get; set; }
+
         [MaxLength(14)]
-        public string Phone { get; set; }
+        public string? Phone { get; set; }
         [Required]
-        [DisplayFormat(DataFormatString = "dd/MM/yyyy")]
+        [DataType(DataType.Date)]
         public DateTime DtBirth { get; set; }
         [Required]
-        [DisplayFormat(DataFormatString = "dd/MM/yyyy")]
+        [DataType(DataType.Date)]
         public DateTime DtRegister { get; set; }
         [Required]
         public bool Status { get; set; }
